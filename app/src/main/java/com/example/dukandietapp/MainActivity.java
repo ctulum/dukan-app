@@ -1,9 +1,13 @@
 package com.example.dukandietapp;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -14,17 +18,24 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.util.ArrayList;
@@ -33,13 +44,18 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private Toolbar toolbar;
-    private LineChart lineChart;
     private FloatingActionButton fab;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
 
-    ArrayList<Entry> yVals;
+    private LineChart weightChart;
+    private BarChart sportChart;
+    private BarChart psychoChart;
+
+    private ArrayList<Entry> weightValues;
+    private ArrayList<Entry> sportChartValues;
+    private ArrayList<Entry> psychoChartValues;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,23 +65,25 @@ public class MainActivity extends AppCompatActivity
         initApp();
         setDrawerLayout();
 
-        setChart();
+        setWeightChart();
+        setSportBarChart();
+        setPsychoBarChart();
     }
 
-    private void setChart() {
-        LineData data = getData(40, 200);
+    private void setWeightChart() {
+        LineData data = getWeightData(365, 200);
         data.setHighlightEnabled(false);
-        setUpChartWithData(lineChart, data, Color.rgb(137, 230, 81));
+        setUpChartWithWeightData(weightChart, data);
     }
 
-    private LineData getData(int count, int range) {
-        yVals = new ArrayList<>();
+    private LineData getWeightData(int count, int range) {
+        weightValues = new ArrayList<>();
         for(int i = 0; i < count; i++) {
             float val = (float) (Math.random()*range)+3;
-            yVals.add(new Entry(i, val, "SP"));
+            weightValues.add(new Entry(i, val, "SP"));
         }
 
-        LineDataSet set = new LineDataSet(yVals, "Kilo");
+        LineDataSet set = new LineDataSet(weightValues, "Kilo");
 
         set.setLineWidth(1f);
         set.setDrawCircleHole(true);
@@ -83,43 +101,161 @@ public class MainActivity extends AppCompatActivity
         return new LineData(set);
     }
 
-    private void setUpChartWithData(final LineChart lineChart, LineData data, int rgb) {
-        lineChart.setScaleMinima((float)data.getEntryCount() / 10f, 1f);
+    private void setUpChartWithWeightData(final LineChart weightChart, LineData data) {
+        weightChart.setScaleMinima((float)data.getEntryCount() / 10f, 1f);
 
-        lineChart.getDescription().setEnabled(false);
-        lineChart.setDrawGridBackground(false);
+        weightChart.getDescription().setEnabled(false);
+        weightChart.setDrawGridBackground(false);
 
-        lineChart.setTouchEnabled(true);
-        lineChart.setDragEnabled(true);
-        lineChart.setScaleEnabled(false);
-        lineChart.setPinchZoom(false);
+        weightChart.setTouchEnabled(true);
+        weightChart.setDragEnabled(true);
+        weightChart.setScaleEnabled(false);
+        weightChart.setPinchZoom(false);
 
-        lineChart.setBackgroundColor(Color.WHITE);
-        lineChart.getXAxis().setLabelCount(10);
-        lineChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        lineChart.getLegend().setEnabled(false);
+        weightChart.setBackgroundColor(Color.WHITE);
+        weightChart.getXAxis().setLabelCount(10);
+        weightChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
+        weightChart.getLegend().setEnabled(false);
 
-        lineChart.getAxisLeft().setDrawGridLines(false);
-        lineChart.getAxisLeft().setDrawAxisLine(false);
-        lineChart.getAxisRight().setDrawGridLines(false);
-        lineChart.getAxisRight().setDrawAxisLine(false);
-        lineChart.getAxisLeft().setEnabled(false);
-        lineChart.getAxisRight().setEnabled(false);
+        weightChart.getAxisLeft().setDrawGridLines(false);
+        weightChart.getAxisLeft().setDrawAxisLine(false);
+        weightChart.getAxisRight().setDrawGridLines(false);
+        weightChart.getAxisRight().setDrawAxisLine(false);
+        weightChart.getAxisLeft().setEnabled(false);
+        weightChart.getAxisRight().setEnabled(false);
 
-        lineChart.getXAxis().setValueFormatter(new ValueFormatter() {
+        weightChart.getXAxis().setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
-                for(int i = 0; i < yVals.size(); i++) {
-                    if(yVals.get(i).getX() == value) {
-                        return yVals.get(i).getData().toString();
+                for(int i = 0; i < weightValues.size(); i++) {
+                    if(weightValues.get(i).getX() == value) {
+                        return weightValues.get(i).getData().toString();
                     }
                 }
                 return "PP";
             }
         });
 
-        lineChart.setData(data);
-        lineChart.invalidate();
+        weightChart.setData(data);
+        weightChart.invalidate();
+    }
+
+    private void setSportBarChart() {
+        sportChart.setDrawBarShadow(false);
+        sportChart.setDrawValueAboveBar(true);
+        sportChart.getDescription().setEnabled(false);
+
+        sportChart.setDrawGridBackground(false);
+
+        setSportData(365, 3);
+    }
+
+    private void setSportData(int count, int range) {
+        ArrayList<BarEntry> entries = new ArrayList<>();
+
+        for(int i = 0; i < count; i++) {
+           if(i % 2 == 1) {
+               if(i%3 == 0) {
+                   entries.add(new BarEntry(i, 3, ContextCompat.getDrawable(getApplicationContext(), R.drawable.workout)));
+               } else entries.add(new BarEntry(i, 1));
+           } else
+               entries.add(new BarEntry(i, 2, ContextCompat.getDrawable(getApplicationContext(), R.drawable.walk)));
+        }
+
+        BarDataSet set = new BarDataSet(entries, "Sport Bar Data Set");
+        set.setColor(Color.rgb(58, 180, 244));
+        set.setDrawValues(false);
+        set.setBarBorderColor(Color.rgb(58, 139, 244));
+        set.setBarBorderWidth(2f);
+        set.setDrawIcons(true);
+
+        BarData data = new BarData(set);
+        data.setBarWidth(1f);
+
+
+        sportChart.setScaleMinima((float)data.getEntryCount() / 10f, 1f);
+        sportChart.setTouchEnabled(true);
+        sportChart.setDragEnabled(true);
+        sportChart.setScaleEnabled(false);
+        sportChart.setPinchZoom(false);
+        sportChart.setBackgroundColor(Color.WHITE);
+        sportChart.getLegend().setEnabled(false);
+        sportChart.getAxisLeft().setEnabled(false);
+        sportChart.getAxisRight().setEnabled(false);
+        sportChart.getAxisLeft().setDrawGridLines(false);
+        sportChart.getAxisLeft().setDrawAxisLine(false);
+        sportChart.getAxisRight().setDrawGridLines(false);
+        sportChart.getAxisRight().setDrawAxisLine(false);
+        sportChart.getXAxis().setDrawAxisLine(false);
+        sportChart.getXAxis().setDrawGridLines(false);
+        sportChart.getXAxis().setEnabled(false);
+
+        sportChart.setData(data);
+        sportChart.invalidate();
+
+        for (IDataSet set1 : sportChart.getData().getDataSets())
+            set1.setDrawIcons(true);
+
+        sportChart.invalidate();
+    }
+
+    private void setPsychoBarChart() {
+        psychoChart.setDrawBarShadow(false);
+        psychoChart.setDrawValueAboveBar(true);
+        psychoChart.getDescription().setEnabled(false);
+
+        psychoChart.setDrawGridBackground(false);
+
+        setPsychoData(365, 3);
+    }
+
+    private void setPsychoData(int count, int range) {
+        ArrayList<BarEntry> entries = new ArrayList<>();
+
+        for(int i = 0; i < count; i++) {
+            if(i % 2 == 1) {
+                if(i%3 == 0) {
+                    entries.add(new BarEntry(i, 3, ContextCompat.getDrawable(getApplicationContext(), R.drawable.happy)));
+                } else entries.add(new BarEntry(i, 1, ContextCompat.getDrawable(getApplicationContext(), R.drawable.sad)));
+            } else
+                entries.add(new BarEntry(i, 2, ContextCompat.getDrawable(getApplicationContext(), R.drawable.neutral)));
+        }
+
+        BarDataSet set = new BarDataSet(entries, "Psycho Status Bar Data Set");
+        set.setColor(Color.rgb(251, 194, 27 ));
+        set.setDrawValues(false);
+        set.setBarBorderColor(Color.rgb(251, 164, 27));
+        set.setBarBorderWidth(2f);
+        set.setDrawIcons(true);
+
+        BarData data = new BarData(set);
+        data.setBarWidth(1f);
+
+
+        psychoChart.setScaleMinima((float)data.getEntryCount() / 10f, 1f);
+        psychoChart.setTouchEnabled(true);
+        psychoChart.setDragEnabled(true);
+        psychoChart.setScaleEnabled(false);
+        psychoChart.setPinchZoom(false);
+        psychoChart.setBackgroundColor(Color.WHITE);
+        psychoChart.getLegend().setEnabled(false);
+        psychoChart.getAxisLeft().setEnabled(false);
+        psychoChart.getAxisRight().setEnabled(false);
+        psychoChart.getAxisLeft().setDrawGridLines(false);
+        psychoChart.getAxisLeft().setDrawAxisLine(false);
+        psychoChart.getAxisRight().setDrawGridLines(false);
+        psychoChart.getAxisRight().setDrawAxisLine(false);
+        psychoChart.getXAxis().setDrawAxisLine(false);
+        psychoChart.getXAxis().setDrawGridLines(false);
+        psychoChart.getXAxis().setEnabled(false);
+
+        psychoChart.setData(data);
+        psychoChart.invalidate();
+
+        for (IDataSet set1 : psychoChart.getData().getDataSets())
+            set1.setDrawIcons(true);
+
+        psychoChart.invalidate();
     }
 
     private void initActionBar() {
@@ -131,7 +267,10 @@ public class MainActivity extends AppCompatActivity
         fab = findViewById(R.id.fab);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
-        lineChart = findViewById(R.id.weight_line_chart);
+
+        weightChart = findViewById(R.id.weight_line_chart);
+        sportChart = findViewById(R.id.sport_bar_chart);
+        psychoChart = findViewById(R.id.psycho_status_bar_chart);
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
